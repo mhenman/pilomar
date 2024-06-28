@@ -84,7 +84,7 @@ class GPIOpin():
         if self.Pin.direction == digitalio.Direction.OUTPUT:
             self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
             self.Pin.value = value
-        
+
     def SetState(self, state):
         if state == 'h' or state == 'y':
             self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
@@ -92,7 +92,7 @@ class GPIOpin():
         elif state == 'l' or state == 'n':
             self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
             self.Pin.value = False
-        else:
+        else:  # Set to floating, high-impedance
             self.Pin.drive_mode = digitalio.DriveMode.OPEN_DRAIN
             self.Pin.value = True
 
@@ -385,7 +385,6 @@ class timer():
                 self.NextDue = self.NextDue + (self.RepeatSeconds * gap)
             else:
                 self.NextDue = self.NextDue + 1
-                
 
     def SetNextDue_orig(self):
         """ Original NEXT DUE calculation, rolls forward 1 RepeatSeconds slot at a time until it's in the future. """
@@ -417,8 +416,6 @@ class timer():
 
 SessionTimer = timer('session',20,offset=7)
 CpuTimer = timer('cpu',120,offset=11)
-
-StatusLed.Task('pulse')
 
 class logfile():
     """ A simple logging mechanism.
