@@ -231,7 +231,7 @@ class statusled():
 
 StatusLed = statusled()
 StatusLed.Task('init') # System is initializing...
-time.sleep(0.5)
+time.sleep(1)
 
 class exceptioncounter():
     """ Keep a count of how many exceptions have been raised during operation. 
@@ -259,8 +259,8 @@ ExceptionCounter = exceptioncounter() # Create instance.
 # Increment exception count with ExceptionCounter.Raise()
 # Reset with ExceptionCounter.Reset()
 
-#button = digitalio.DigitalInOut(board.USER_SW) # Built in button.
-#button.switch_to_input(pull=digitalio.Pull.DOWN)
+button = digitalio.DigitalInOut(board.USER_SW) # Built in button.
+button.switch_to_input(pull=digitalio.Pull.DOWN)
 DegreeSymbol = 'deg'
 
 def BoolToString(value):
@@ -1952,8 +1952,6 @@ class memorymanager():
 
 MemMgr = memorymanager()
 
-StatusLed.Task('move')
-
 print ('Starting...')
 RPi.Reset() # Reset comms and send initial header.
 # Report back which motors are defined.
@@ -1961,8 +1959,6 @@ stat_line = "defined motors "
 for i in Motors:
     stat_line += i.MotorName + ' '
 RPi.Write(stat_line)
-
-StatusLed.Task('idle')
 
 # This is the main processing loop.
 try:
@@ -2055,7 +2051,6 @@ except Exception as e:
     neatprint(e.args)
     ExceptionCounter.Raise() # Increment exception count for the session.
 
-StatusLed.Task('error')
 # Shutdown procedure...
 RPi.Write('controller stopping')
 print ('controller stopping...')
@@ -2073,4 +2068,3 @@ while len(RPi.WriteQueue) > 0:
         print ('Flushing incomplete.')
         break
 print ('controller stopped')
-StatusLed.Task('idle')
