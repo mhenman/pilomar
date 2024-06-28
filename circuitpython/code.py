@@ -32,9 +32,9 @@ Bootline = '' # Make sure the entire boot_out.txt content is available as a sing
 CircuitPythonVersion = ''
 with open('boot_out.txt','r') as f:
     while True:
-        line = f.readline()
-        if line == '': break
-        lines = line.split(';')
+        b_line = f.readline()
+        if b_line == '': break
+        lines = b_line.split(';')
         for item in lines:
             cleanitem = item.strip() # Remove unwanted characters.
             Bootline += cleanitem + ' '
@@ -81,7 +81,20 @@ class GPIOpin():
         if direction == digitalio.Direction.OUTPUT: self.Pin.value = False # turn off.
 
     def SetValue(self,value):
-        if self.Pin.direction == digitalio.Direction.OUTPUT: self.Pin.value = value
+        if self.Pin.direction == digitalio.Direction.OUTPUT:
+            self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
+            self.Pin.value = value
+        
+    def SetState(self, state):
+        if state == 'h' or state == 'y':
+            self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
+            self.Pin.value = True
+        elif state == 'l' or state == 'n':
+            self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
+            self.Pin.value = False
+        else:
+            self.Pin.drive_mode = digitalio.DriveMode.OPEN_DRAIN
+            self.Pin.value = True
 
     def GetValue(self):
         return self.Pin.value
@@ -218,7 +231,7 @@ class statusled():
 
 StatusLed = statusled()
 StatusLed.Task('init') # System is initializing...
-time.sleep(1)
+time.sleep(0.5)
 
 class exceptioncounter():
     """ Keep a count of how many exceptions have been raised during operation. 
@@ -246,18 +259,21 @@ ExceptionCounter = exceptioncounter() # Create instance.
 # Increment exception count with ExceptionCounter.Raise()
 # Reset with ExceptionCounter.Reset()
 
-button = digitalio.DigitalInOut(board.USER_SW) # Built in button.
-button.switch_to_input(pull=digitalio.Pull.DOWN)
+#button = digitalio.DigitalInOut(board.USER_SW) # Built in button.
+#button.switch_to_input(pull=digitalio.Pull.DOWN)
 DegreeSymbol = 'deg'
 
 def BoolToString(value):
-    if value: result = 'y'
+    if value == 'h' or value: result = 'y'
     else: result = 'n'
     return result
 
 def StringToBool(value,default=False):
     if value.lower() == 'y' or value.lower() == 'true': result = True
     elif value.lower() == 'n' or value.lower() == 'false': result = False
+    elif value.lower() == 'l': result = 'l'
+    elif value.lower() == 'h': result = 'h'
+    elif value.lower() == 'z': result = 'z'
     else: result = default
     return result
 
@@ -367,6 +383,9 @@ class timer():
             gap = ((time.time() - self.NextDue) // self.RepeatSeconds) + 1 # How many multiples of 'repeatseconds' do we need to add to get to the next timeslot?
             if gap >= 0:
                 self.NextDue = self.NextDue + (self.RepeatSeconds * gap)
+            else:
+                self.NextDue = self.NextDue + 1
+                
 
     def SetNextDue_orig(self):
         """ Original NEXT DUE calculation, rolls forward 1 RepeatSeconds slot at a time until it's in the future. """
@@ -398,6 +417,8 @@ class timer():
 
 SessionTimer = timer('session',20,offset=7)
 CpuTimer = timer('cpu',120,offset=11)
+
+StatusLed.Task('pulse')
 
 class logfile():
     """ A simple logging mechanism.
@@ -1035,9 +1056,9 @@ class steppermotor():
         self.ModeSignals = [False,False,False] # The setting of the 3 mode signals to the driver chip. Defines full/microstep value.
         #self.MicrostepRatio = None # Obsolete parameter.
         self.MotorPower = None
-        self.MicrosteppingMode0 = False
-        self.MicrosteppingMode1 = False
-        self.MicrosteppingMode2 = False
+        self.MicrosteppingMode0 = 'l'
+        self.MicrosteppingMode1 = 'l'
+        self.MicrosteppingMode2 = 'l'
         #self.MotorStepsPerAxisDegree = None
         self.GearRatio = None # gearratio is the overall gearing of the entire transmission. 60 means 60 motor revs for 1 transmission rev.
         self.AxisStepsPerRev = None
@@ -1123,9 +1144,9 @@ class steppermotor():
         self.ModeSignals = [False,False,False]
         self.MotorStepsPerRev = None
         self.MotorPower = None
-        self.MicrosteppingMode0 = False
-        self.MicrosteppingMode1 = False
-        self.MicrosteppingMode2 = False
+        self.MicrosteppingMode0 = 'l'
+        self.MicrosteppingMode1 = 'l'
+        self.MicrosteppingMode2 = 'l'
         #self.MotorStepsPerAxisDegree = None
         self.GearRatio = None # gearratio is the overall gearing of the entire transmission. 60 means 60 motor revs for 1 transmission rev.
         self.AxisStepsPerRev = None        
@@ -1292,9 +1313,9 @@ class steppermotor():
         self.Mode0BCM = mode0BCM # Pin(mode0BCM, Pin.OUT, Pin.PULL_DOWN) # Set pin to OUTPUT. This controls FULL vs MICRO stepping for the controller.
         self.Mode1BCM = mode1BCM # Pin(mode1BCM, Pin.OUT, Pin.PULL_DOWN) # Set pin to OUTPUT. This controls FULL vs MICRO stepping for the controller.
         self.Mode2BCM = mode2BCM # Pin(mode2BCM, Pin.OUT, Pin.PULL_DOWN) # Set pin to OUTPUT. This controls FULL vs MICRO stepping for the controller.
-        self.Mode0BCM.SetValue(False) # (0)  # Turn pin off.
-        self.Mode1BCM.SetValue(False) # (0)  # Turn pin off.
-        self.Mode2BCM.SetValue(False) # (0)  # Turn pin off.
+        self.Mode0BCM.SetState('l') # (0)  # Turn pin off.
+        self.Mode1BCM.SetState('l') # (0)  # Turn pin off.
+        self.Mode2BCM.SetState('l') # (0)  # Turn pin off.
         #LogFile.Log("#", self.MotorName, 'Mode0 pin', self.Mode0BCM.PinNumber)
         #LogFile.Log("#", self.MotorName, 'Mode1 pin', self.Mode1BCM.PinNumber)
         #LogFile.Log("#", self.MotorName, 'Mode2 pin', self.Mode2BCM.PinNumber)
@@ -1423,7 +1444,7 @@ class steppermotor():
             if lc > 19 and lineitems[19].lower() != 'none': # Define restangle
                 self.RestAngle = float(lineitems[19])
             if lc > 20: # Load mode signals to select full or microstepping ratio.
-                temp = lineitems[20] + 'nnn'
+                temp = lineitems[20] + 'lll'
                 self.ModeSignals = [StringToBool(temp[0]),StringToBool(temp[1]),StringToBool(temp[2])]
                 self.MicrosteppingMode0 = self.ModeSignals[0] # True or False
                 self.MicrosteppingMode1 = self.ModeSignals[1]
@@ -1501,9 +1522,9 @@ class steppermotor():
         #    self.Mode1BCM.SetValue(False) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
         #    self.Mode2BCM.SetValue(False) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
         # Send MOVE pulse to controller.
-        self.Mode0BCM.SetValue(self.MicrosteppingMode0) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
-        self.Mode1BCM.SetValue(self.MicrosteppingMode1) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
-        self.Mode2BCM.SetValue(self.MicrosteppingMode2) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
+        self.Mode0BCM.SetState(self.MicrosteppingMode0) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
+        self.Mode1BCM.SetState(self.MicrosteppingMode1) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
+        self.Mode2BCM.SetState(self.MicrosteppingMode2) # value(0) # Full steps # Keep DRV8825 MODE pins LOW.
         if self.MotorEnabled: # If we've disabled the motor, then perform everything except the move pulse.
             self.StepBCM.SetValue(True) # value(1)
             time.sleep(self.WaitTime)
@@ -1715,9 +1736,9 @@ CommonDirectionBCM.SetValue(False)
 CommonEnableBCM.SetDirection(digitalio.Direction.OUTPUT)
 CommonEnableBCM.SetValue(False)
 AzimuthFaultBCM.SetDirection(digitalio.Direction.INPUT)
-AzimuthFaultBCM.pull = digitalio.Pull.UP # Floating pins will toggle between FAULT and OK which causes chaos. Pull UP defaults to OK.
+AzimuthFaultBCM.SetPull(digitalio.Pull.UP) # Floating pins will toggle between FAULT and OK which causes chaos. Pull UP defaults to OK.
 AltitudeFaultBCM.SetDirection(digitalio.Direction.INPUT)
-AltitudeFaultBCM.pull = digitalio.Pull.UP
+AltitudeFaultBCM.SetPull(digitalio.Pull.UP)
 
 # Configure Motors.
 Azimuth = steppermotor('azimuth')
@@ -1931,13 +1952,17 @@ class memorymanager():
 
 MemMgr = memorymanager()
 
+StatusLed.Task('move')
+
 print ('Starting...')
 RPi.Reset() # Reset comms and send initial header.
 # Report back which motors are defined.
-line = "defined motors "
+stat_line = "defined motors "
 for i in Motors:
-    line += i.MotorName + ' '
-RPi.Write(line)
+    stat_line += i.MotorName + ' '
+RPi.Write(stat_line)
+
+StatusLed.Task('idle')
 
 # This is the main processing loop.
 try:
@@ -1949,21 +1974,21 @@ try:
             print("Main:LogFile.SendCheck failed.",e)
             ExceptionCounter.Raise() # Increment exception count for the session.
 
-        line = ''
+        input_line = ''
         try:
-            line = RPi.Read() # Any input from the Raspberry Pi in the cache? 
+            input_line = RPi.Read() # Any input from the Raspberry Pi in the cache? 
         except Exception as e:
             LogFile.Log("Main:RPi.Read failed.",e)
             print("Main:RPi.Read failed.",e)
-            print("Main:Failed on",line)
+            print("Main:Failed on",input_line)
             ExceptionCounter.Raise() # Increment exception count for the session.
 
         try:
-            if len(line) != 0: ProcessInput(line) # Process it.
+            if len(input_line) != 0: ProcessInput(input_line) # Process it.
         except Exception as e:
             LogFile.Log("Main:ProcessInput failed.",e)
             print("Main:ProcessInput failed.",e)
-            print("Main:Failed on",line)
+            print("Main:Failed on",input_line)
             ExceptionCounter.Raise() # Increment exception count for the session.
             
         try:
@@ -2025,11 +2050,12 @@ try:
             ExceptionCounter.Raise() # Increment exception count for the session.
             
 except Exception as e:
-        neatprint('Mainloop failed:', str(e))
-        StatusLed.Task('error')
-        neatprint(e.args)
-        ExceptionCounter.Raise() # Increment exception count for the session.
+    neatprint('Mainloop failed:', str(e))
+    StatusLed.Task('error')
+    neatprint(e.args)
+    ExceptionCounter.Raise() # Increment exception count for the session.
 
+StatusLed.Task('error')
 # Shutdown procedure...
 RPi.Write('controller stopping')
 print ('controller stopping...')
@@ -2047,3 +2073,4 @@ while len(RPi.WriteQueue) > 0:
         print ('Flushing incomplete.')
         break
 print ('controller stopped')
+StatusLed.Task('idle')
