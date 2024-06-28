@@ -1,2 +1,16 @@
+data/campaign*
 log/buildpilomar
 log/*.log
+src/__pycache__
+data/CometEls.txt
+data/altitude_angle
+data/azimuth_angle
+data/celestrakcache.json
+data/constellationship.fab
+data/de421.bsp
+data/hip_main.dat
+data/hipparcos.pkl
+data/ngc.pkl
+data/pilomar_params.json
+data/pilomar_sessions.txt
+
