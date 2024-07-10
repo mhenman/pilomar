@@ -86,10 +86,10 @@ class GPIOpin():
             self.Pin.value = value
 
     def SetState(self, state):
-        if state == 'h' or state == 'y':
+        if state == 'h' or state == 'y' or state == True:
             self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
             self.Pin.value = True
-        elif state == 'l' or state == 'n':
+        elif state == 'l' or state == 'n' or state == False:
             self.Pin.drive_mode = digitalio.DriveMode.PUSH_PULL
             self.Pin.value = False
         else:  # Set to floating, high-impedance
